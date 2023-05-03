@@ -6,4 +6,5 @@
  *
  */
 module SDProject {
+	requires java.sql;
 }

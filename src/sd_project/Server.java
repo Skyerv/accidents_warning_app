@@ -6,61 +6,61 @@ import java.util.List;
 import java.io.*; 
 
 public class Server {
-	private static final int PORTA = 20011;
-    private static List<Usuario> usuarios = new ArrayList<>();
+	private ServerSocket servidor;
+    private List<Usuario> usuarios;
     
-	public static void main(String[] args) throws IOException 
-	   { 
-		ServerSocket servidor = new ServerSocket(PORTA);
-        System.out.println("Servidor iniciado na porta " + PORTA);
-        
-        while (true) {
+    public Server(int porta) throws IOException {
+        servidor = new ServerSocket(porta);
+        usuarios = new ArrayList<>();
+    }
+    
+    public void iniciar() throws IOException, ClassNotFoundException {
+            System.out.println("Aguardando conexão...");
             Socket cliente = servidor.accept();
             System.out.println("Cliente conectado: " + cliente.getInetAddress().getHostAddress());
             
-            Thread t = new Thread(() -> {
-                try {
-                    BufferedReader entrada = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
-                    PrintWriter saida = new PrintWriter(cliente.getOutputStream(), true);
-                    
-                    String requisicao = entrada.readLine();
-                    String[] partes = requisicao.split(",");
-                    // change afterward to accept json
-                    
-                    if (partes[0].equals("login")) { // if the operation is 1 or login
-                        Usuario usuario = buscarUsuario(partes[1], partes[2]);
-                        
-                        if (usuario != null) {
-                            saida.println("ok");
-                        } else {
-                            saida.println("usuario nao existe no banco");
-                        }
-                    } else if (partes[0].equals("cadastro")) { // if the operation is 2
-                        Usuario usuario = new Usuario(0, partes[1], partes[2], partes[3]);
-                        System.out.printf (usuario.getNome());
-                        usuarios.add(usuario);
-                        saida.println("ok");
-                    }
-                    
-                    entrada.close();
-                    saida.close();
-                    cliente.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
+            ObjectInputStream entrada = new ObjectInputStream(cliente.getInputStream());
+            ObjectOutputStream saida = new ObjectOutputStream(cliente.getOutputStream());
             
-            t.start();
-        }
+            String operacao = (String) entrada.readObject();
+            
+            if (operacao.equals("LOGIN")) {
+                String email = (String) entrada.readObject();
+                String senha = (String) entrada.readObject();
+                
+                Usuario usuario = null;
+                for (Usuario u : usuarios) {
+                    if (u.getEmail().equals(email) && u.getSenha().equals(senha)) {
+                        usuario = u;
+                        break;
+                    }
+                }
+                saida.writeObject(usuario);
+                
+            } else if (operacao.equals("CADASTRO")) {
+                Usuario usuario = (Usuario) entrada.readObject();
+                boolean sucesso = cadastrar(usuario);
+                saida.writeBoolean(sucesso);
+                
+            } else if (operacao.equals("SAIR")) {
+                entrada.close();
+                saida.close();
+                cliente.close();
+            }
     }
     
-    private static Usuario buscarUsuario(String email, String senha) {
-        for (Usuario usuario : usuarios) {
-            if (usuario.getEmail().equals(email) && usuario.getSenha().equals(senha)) {
-                return usuario;
+    private boolean cadastrar(Usuario usuario) {
+        for (Usuario u : usuarios) {
+            if (u.getEmail().equals(usuario.getEmail())) {
+                return false;
             }
         }
-        
-        return null;
+        usuarios.add(usuario);
+        return true;
+    }
+    
+    public void fecharConexao() throws IOException {
+        servidor.close();
+        System.out.println("Conexão com o servidor encerrada");
     }
 }

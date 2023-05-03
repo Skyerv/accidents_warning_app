@@ -4,54 +4,39 @@ import java.io.*;
 import java.net.*;
 
 public class Client {
-	private static String HOST = new String ("127.0.0.1");
-    private static final int PORT = 20011;
+	private Socket socket;
+    private BufferedReader entrada;
+    private PrintWriter saida;
     
-	public static void main(String[] args) throws IOException {
-        if (args.length > 0)
-        	HOST = args[0];
-        System.out.println ("Attemping to connect to host " +
-        		HOST + " on port 10007.");
-
-        Socket echoSocket = null;
-        PrintWriter out = null;
-        BufferedReader in = null;
-
-        try {
-            echoSocket = new Socket(HOST, PORT);
-            out = new PrintWriter(echoSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(
-                                        echoSocket.getInputStream()));
-        } catch (UnknownHostException e) {
-            System.err.println("Don't know about host: " + HOST);
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("Couldn't get I/O for "
-                               + "the connection to: " + HOST);
-            System.exit(1);
-        }
-
-	BufferedReader stdIn = new BufferedReader(
-                                   new InputStreamReader(System.in));
-
-	String userInput;
-    System.out.print ("input: ");
-    while ((userInput = stdIn.readLine()) != null) {
-    out.println(userInput);
-        System.out.print ("input: ");
+    public Client(String enderecoServidor, int portaServidor) throws IOException {
+        socket = new Socket(enderecoServidor, portaServidor);
+        saida = new PrintWriter(socket.getOutputStream(), true);
+        entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
-	
-	String resposta = in.readLine();
     
-    if (resposta.equals("ok")) {
-        System.out.println("Login realizado com sucesso!");
-    } else {
-        System.out.println("Erro ao fazer login.");
+    public Usuario fazerLogin(String email, String senha) throws IOException, ClassNotFoundException {
+//        saida.writeObject("LOGIN");
+//        saida.writeObject(email);
+//        saida.writeObject(senha);
+        Usuario usuario = new Usuario(0, "aaa", "aaa@aa.com", "1211212");
+//        return usuario;
+    	System.out.println("loginnn");
+    	return usuario;
     }
-
-	out.close();
-	in.close();
-	stdIn.close();
-	echoSocket.close();
+    
+    public boolean fazerCadastro(Usuario usuario) throws IOException, ClassNotFoundException {
+//        saida.writeObject("CADASTRO");
+//        saida.writeObject(usuario);
+//        boolean sucesso = entrada.readBoolean();
+//        return sucesso;
+    	System.out.println("cadastrooo");
+    	return true;
+    }
+    
+    public void fecharConexao() throws IOException {
+        saida.write("SAIR");
+        entrada.close();
+        saida.close();
+        socket.close();
     }
 }
